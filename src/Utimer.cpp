@@ -1,52 +1,29 @@
-// modified version of original utimer provided by professor
-
 #include <iostream>
 #include <chrono>
 #include <thread>
 
-#define START(timename) auto timename = std::chrono::system_clock::now();
-#define STOP(timename, elapsed) auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - timename).count();
-
 class Utimer
 {
-    std::chrono::system_clock::time_point start;
-    std::chrono::system_clock::time_point stop;
-    std::string message;
-    using usecs = std::chrono::microseconds;
-    using msecs = std::chrono::milliseconds;
-
 private:
-    long *us_elapsed;
+    std::chrono::system_clock::time_point s;
+    std::chrono::system_clock::time_point e;
+    std::string message;
 
 public:
-    Utimer(const std::string m) : message(m), us_elapsed((long *)NULL)
+    void start()
     {
-        start = std::chrono::system_clock::now();
+        s = std::chrono::system_clock::now();
     }
 
-    Utimer(const std::string m, long *us) : message(m), us_elapsed(us)
+    long stop()
     {
-        start = std::chrono::system_clock::now();
-    }
+        e = std::chrono::system_clock::now();
 
-    Utimer(long *us) : message(NULL), us_elapsed(us)
-    {
-        start = std::chrono::system_clock::now();
-    }
-
-    ~Utimer()
-    {
-        stop =
-            std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed =
-            stop - start;
-        auto musec =
+            e - s;
+        long musec =
             std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 
-        if (!message.empty())
-            std::cout << message << " computed in " << musec << " usec "
-                      << std::endl;
-        if (us_elapsed != NULL)
-            (*us_elapsed) = musec;
+        return musec;
     }
 };
