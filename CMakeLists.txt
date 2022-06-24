@@ -1,0 +1,9 @@
+cmake_minimum_required(VERSION 3.16)
+project( SPM-project )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin")
+add_compile_options(-Wall -Werror -Wno-error=maybe-uninitialized -O3)
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS})
+
+add_executable( sequential.out ./src/sequential.cpp)
+target_link_libraries( sequential.out ${OpenCV_LIBS} )
