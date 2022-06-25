@@ -5,13 +5,21 @@ using namespace cv;
 class VideoMotionDetection
 {
 private:
+    // file path of the video
     std::string path;
+    // kernel square side size, rows/columns to add in each frame side
     int k_size, p_size;
+    // total pixels per frame
     int t_pixels;
+    // total frames of the video
     int t_frames;
+    // frame sizes
     int f_width, f_height;
+    // frame sizes + padding
     int f_width_padded, f_height_padded;
+    // detection pixel threshold
     float thresh;
+    // background frame
     Mat f_bg;
     VideoCapture capture;
 
@@ -34,26 +42,35 @@ public:
         f_height_padded = f_height + p_size;
         t_pixels = f_width * f_height;
 
-        f_bg = next_frame();
-        imwrite("./bin/original_frame.jpg", f_bg);
-        f_bg = pad_frame(f_bg);
-        imwrite("./bin/padded_frame.jpg", f_bg);
-        f_bg = to_greyscale(f_bg);
-        imwrite("./bin/grey_frame.jpg", f_bg);
-        convolve(f_bg);
-        imwrite("./bin/convolved_frame.jpg", f_bg);
+        Mat f;
+        next_frame(f);
+        imwrite("./bin/original_frame.jpg", f);
+
+        Mat f_padded;
+        pad_frame(f, f_padded);
+        imwrite("./bin/padded_frame.jpg", f_padded);
+
+        Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
+        to_greyscale(f_padded, f_grey);
+
+        imwrite("./bin/grey_frame.jpg", f_grey);
+
+        convolve(f_grey);
+        imwrite("./bin/convolved_frame.jpg", f_grey);
+
+        f_bg = f_grey;
     }
 
     void print_info()
     {
         std::cout << "********** INFO **********" << std::endl;
-        std::cout << "File path " << path << std::endl;
-        std::cout << "Number of frames " << t_frames << std::endl;
-        std::cout << "Pixels per frame " << t_pixels << std::endl;
-        std::cout << "Kernel size " << k_size << std::endl;
-        std::cout << "Pad rows/columns " << p_size << std::endl;
-        std::cout << "Frame width " << f_width << std::endl;
-        std::cout << "Frame height " << f_height << std::endl;
+        std::cout << "File path: " << path << std::endl;
+        std::cout << "Number of frames: " << t_frames << std::endl;
+        std::cout << "Pixels per frame: " << t_pixels << std::endl;
+        std::cout << "Kernel size: " << k_size << std::endl;
+        std::cout << "Pad rows/columns: " << p_size << std::endl;
+        std::cout << "Frame width: " << f_width << std::endl;
+        std::cout << "Frame height: " << f_height << std::endl;
     }
 
     int get_num_frames()
@@ -61,37 +78,32 @@ public:
         return t_frames;
     }
 
-    Mat next_frame()
+    void reset_video()
     {
-        Mat frame;
-        capture >> frame;
-
-        return frame;
+        capture.set(CAP_PROP_POS_FRAMES, 1);
     }
 
-    Mat pad_frame(Mat& frame) {
-        Mat f_padded;
+    void next_frame(Mat &frame)
+    {
+        capture >> frame;
+    }
 
+    void pad_frame(Mat &frame, Mat &f_padded)
+    {
         copyMakeBorder(
             frame, f_padded,
             p_size, p_size, p_size, p_size,
             BORDER_CONSTANT, Scalar(0));
-        return f_padded;
     }
 
-    Mat to_greyscale(Mat &frame)
+    void to_greyscale(Mat &frame, Mat &f_grey)
     {
-        Mat f_grey = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
-
         for (int i = p_size; i < f_height_padded; i++)
             for (int j = p_size; j < f_width_padded; j++)
             {
                 Vec3b pixel = frame.at<Vec3b>(i, j);
-
                 f_grey.at<uchar>(i, j) = round((pixel[0] + pixel[1] + pixel[2]) / 3);
             }
-
-        return f_grey;
     }
 
     void convolve(Mat &frame)
