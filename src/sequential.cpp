@@ -83,11 +83,12 @@ int main(int argc, char **argv)
             it_grey += timer.stop();
 
             timer.start();
-            detector.convolve(f_grey);
+            Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
+            detector.convolve(f_grey, f_convolved);
             it_convolute += timer.stop();
 
             timer.start();
-            detected += detector.detect(f_grey);
+            detected += detector.detect(f_convolved);
             it_detect += timer.stop();
         }
 

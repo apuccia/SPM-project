@@ -7,15 +7,17 @@ class VideoMotionDetection
 private:
     // file path of the video
     std::string path;
-    // kernel square side size, rows/columns to add in each frame side
-    int k_size, p_size;
+    // kernel square side size
+    int k_size;
+    // rows/columns to add in each frame side
+    int p_size;
     // total pixels per frame
     int t_pixels;
     // total frames of the video
     int t_frames;
     // frame sizes
     int f_width, f_height;
-    // frame sizes + padding
+    // frame sizes + one side padding
     int f_width_padded, f_height_padded;
     // detection pixel threshold
     float thresh;
@@ -52,13 +54,13 @@ public:
 
         Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
         to_greyscale(f_padded, f_grey);
-
         imwrite("./bin/grey_frame.jpg", f_grey);
 
-        convolve(f_grey);
-        imwrite("./bin/convolved_frame.jpg", f_grey);
+        Mat f_convolved = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1); 
+        convolve(f_grey, f_convolved);
+        imwrite("./bin/convolved_frame.jpg", f_convolved);
 
-        f_bg = f_grey;
+        f_bg = f_convolved;
     }
 
     void print_info()
@@ -102,13 +104,14 @@ public:
             for (int j = p_size; j < f_width_padded; j++)
             {
                 Vec3b pixel = frame.at<Vec3b>(i, j);
-                f_grey.at<uchar>(i, j) = round((pixel[0] + pixel[1] + pixel[2]) / 3);
+                f_grey.at<uchar>(i, j) = (pixel[0] + pixel[1] + pixel[2]) / 3;
             }
     }
 
-    void convolve(Mat &frame)
+    void convolve(Mat &frame, Mat &f_convolved)
     {
-        float total;
+        long total;
+        int ker_dim = k_size * k_size;
         for (int i = p_size; i < f_height_padded; i++)
             for (int j = p_size; j < f_width_padded; j++)
             {
@@ -118,7 +121,7 @@ public:
                     for (int z = j - p_size; z <= j + p_size; z++)
                         total += frame.at<uchar>(k, z);
 
-                frame.at<uchar>(i, j) = round(total / (k_size * k_size));
+                f_convolved.at<uchar>(i, j) = total / ker_dim;
             }
     }
 
