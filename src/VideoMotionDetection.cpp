@@ -60,7 +60,7 @@ public:
         convolve(f_grey, f_convolved);
         imwrite("./bin/convolved_frame.jpg", f_convolved);
 
-        f_bg = f_convolved;
+        f_convolved.copyTo(f_bg);
     }
 
     void print_info()
@@ -84,7 +84,7 @@ public:
     {
         capture.set(CAP_PROP_POS_FRAMES, 1);
     }
-
+    
     void next_frame(Mat &frame)
     {
         capture >> frame;
