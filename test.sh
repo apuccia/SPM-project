@@ -3,7 +3,6 @@
 res=$1
 
 if [[ -n $res ]]; then
-    echo $res
     if [[ $res == "SD" ]]; then
         data="./data/SD.mp4"
     elif [[ $res = "HD" ]]; then
@@ -16,8 +15,9 @@ if [[ -n $res ]]; then
     fi
 fi
 
-for i in {3..11..2}
+mkdir -p results;
+for ker in {3..11..2}
 do
-    echo "Testing sequential solution with kernel size $i, resolution $res"
-    ./bin/sequential.out -k $i -t 50 -s -f $data
+    echo "Testing sequential solution with kernel size $ker, resolution $res"
+    ./bin/sequential.out -k $ker -t 50 -f $data > ./results/sequential_$res\_$ker.txt
 done
