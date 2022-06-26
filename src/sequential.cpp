@@ -57,9 +57,10 @@ int main(int argc, char **argv)
     int t_frames = detector.get_num_frames() - 1;
     int detected = 0;
 
-    // total times in 10 iterations
+    int iters = 5;
+    // total times for all iterations
     long t_read = 0, t_padding = 0, t_grey = 0, t_convolute = 0, t_detect = 0, t_total = 0;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < iters; i++)
     {
         // total times per iteration
         long it_read = 0, it_padding = 0, it_grey = 0, it_convolute = 0, it_detect = 0;
@@ -104,26 +105,26 @@ int main(int argc, char **argv)
     
     t_total += t_read + t_padding + t_grey + t_convolute + t_detect;
 
-    std::cout << "---------- RESULTS: average on 10 iterations ----------" << std::endl;
+    std::cout << "---------- RESULTS: average on " << iters << " iterations ----------" << std::endl;
     std::cout << "Total frames: " << t_frames << std::endl;
-    std::cout << "Detected " << detected / 10 << " frames" << std::endl;
+    std::cout << "Detected " << detected / iters << " frames" << std::endl;
     std::cout << "***** Read" << std::endl;
-    std::cout << "Average time spent on reading a frame: " << (t_read / t_frames) / 10 << std::endl;
-    std::cout << "Total time spent on reading frames: " << t_read / 10 << std::endl;
+    std::cout << "Average time spent on reading a frame: " << (t_read / t_frames) / iters << std::endl;
+    std::cout << "Total time spent on reading frames: " << t_read / iters << std::endl;
     std::cout << "***** Pad" << std::endl;
-    std::cout << "Average time spent on padding a frame: " << (t_padding / t_frames) / 10 << std::endl;
-    std::cout << "Total time spent on padding a frame: " << t_padding / 10 << std::endl;
+    std::cout << "Average time spent on padding a frame: " << (t_padding / t_frames) / iters << std::endl;
+    std::cout << "Total time spent on padding a frame: " << t_padding / iters << std::endl;
     std::cout << "***** Greyscale" << std::endl;
-    std::cout << "Average time spent on greyscaling a frame: " << (t_grey / t_frames) / 10 << std::endl;
-    std::cout << "Total time spent on greyscaling a frame: " << t_grey / 10 << std::endl;
+    std::cout << "Average time spent on greyscaling a frame: " << (t_grey / t_frames) / iters << std::endl;
+    std::cout << "Total time spent on greyscaling a frame: " << t_grey / iters << std::endl;
     std::cout << "***** Convolution" << std::endl;
-    std::cout << "Average time spent on convoluting a frame: " << (t_convolute / t_frames) / 10 << std::endl;
-    std::cout << "Total time spent on convoluting a frame: " << t_convolute / 10 << std::endl;
+    std::cout << "Average time spent on convoluting a frame: " << (t_convolute / t_frames) / iters << std::endl;
+    std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
     std::cout << "***** Detection" << std::endl;
-    std::cout << "Average time spent on detecting a frame: " << (t_detect / t_frames) / 10 << std::endl;
-    std::cout << "Total time spent on detecting a frame: " << t_detect / 10 << std::endl;
+    std::cout << "Average time spent on detecting a frame: " << (t_detect / t_frames) / iters << std::endl;
+    std::cout << "Total time spent on detecting a frame: " << t_detect / iters << std::endl;
     std::cout << "***** Total" << std::endl;
-    std::cout << "Total time spent to process the whole stream: " << t_total / 10 << std::endl;
+    std::cout << "Total time spent to process the whole stream: " << t_total / iters << std::endl;
     std::cout << "-------------------------------------------------------" << std::endl;
 
     return 0;
