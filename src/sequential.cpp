@@ -9,10 +9,10 @@ int main(int argc, char **argv)
     std::string path = "";
     int k_size = 0;
     float thresh = -1;
-    bool stats = false;
+    bool stats = false, conv_det = 1;
 
     int opt;
-    while ((opt = getopt(argc, argv, "k:f:t:s")) != -1)
+    while ((opt = getopt(argc, argv, "k:f:t:s:c")) != -1)
     {
         switch (opt)
         {
@@ -28,6 +28,9 @@ int main(int argc, char **argv)
         case 's':
             stats = true;
             break;
+        case 'c':
+            conv_det = true;
+            break;
         case '?':
             std::cout << "Usage:\n"
                       << argv[0] << "\n"
@@ -35,6 +38,8 @@ int main(int argc, char **argv)
                                     "[-f] file path\n"
                                     "[-t] detect threshold"
                       << std::endl;
+
+            return -1;
         }
     }
     if (k_size == 0 || path.empty() || thresh == -1)
@@ -83,14 +88,24 @@ int main(int argc, char **argv)
             detector.to_greyscale(f_padded, f_grey);
             it_grey += timer.stop();
 
-            timer.start();
-            Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-            detector.convolve(f_grey, f_convolved);
-            it_convolute += timer.stop();
+            if (conv_det)
+            {
+                timer.start();
+                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
+                detector.convolve_detect(f_grey, f_convolved);
+                it_convolute += timer.stop();
+            }
+            else
+            {
+                timer.start();
+                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
+                detector.convolve(f_grey, f_convolved);
+                it_convolute += timer.stop();
 
-            timer.start();
-            detected += detector.detect(f_convolved);
-            it_detect += timer.stop();
+                timer.start();
+                detected += detector.detect(f_convolved);
+                it_detect += timer.stop();
+            }
         }
 
         t_read += it_read;
@@ -102,7 +117,7 @@ int main(int argc, char **argv)
         // reset to first frame (background excluded)
         detector.reset_video();
     }
-    
+
     t_total += t_read + t_padding + t_grey + t_convolute + t_detect;
 
     std::cout << "---------- RESULTS: average on " << iters << " iterations ----------" << std::endl;
@@ -117,12 +132,22 @@ int main(int argc, char **argv)
     std::cout << "***** Greyscale" << std::endl;
     std::cout << "Average time spent on greyscaling a frame: " << (t_grey / t_frames) / iters << std::endl;
     std::cout << "Total time spent on greyscaling a frame: " << t_grey / iters << std::endl;
-    std::cout << "***** Convolution" << std::endl;
-    std::cout << "Average time spent on convoluting a frame: " << (t_convolute / t_frames) / iters << std::endl;
-    std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
-    std::cout << "***** Detection" << std::endl;
-    std::cout << "Average time spent on detecting a frame: " << (t_detect / t_frames) / iters << std::endl;
-    std::cout << "Total time spent on detecting a frame: " << t_detect / iters << std::endl;
+
+    if (conv_det)
+    {
+        std::cout << "***** Convolution & Detection" << std::endl;
+        std::cout << "Average time spent on convoluting & detecting a frame: " << (t_convolute / t_frames) / iters << std::endl;
+        std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
+    }
+    else
+    {
+        std::cout << "***** Convolution" << std::endl;
+        std::cout << "Average time spent on convoluting a frame: " << (t_convolute / t_frames) / iters << std::endl;
+        std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
+        std::cout << "***** Detection" << std::endl;
+        std::cout << "Average time spent on detecting a frame: " << (t_detect / t_frames) / iters << std::endl;
+        std::cout << "Total time spent on detecting a frame: " << t_detect / iters << std::endl;
+    }
     std::cout << "***** Total" << std::endl;
     std::cout << "Total time spent to process the whole stream: " << t_total / iters << std::endl;
     std::cout << "-------------------------------------------------------" << std::endl;
