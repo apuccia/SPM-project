@@ -137,4 +137,26 @@ public:
 
         return perc > thresh;
     }
+
+    bool convolve_detect(Mat &frame, Mat &f_convolved) {
+        long sum;
+        int diff_pixels= 0;
+        int ker_dim = k_size * k_size;
+        for (int i = p_size; i < f_height_padded; i++)
+            for (int j = p_size; j < f_width_padded; j++)
+            {
+                sum = 0;
+
+                for (int k = i - p_size; k <= i + p_size; k++)
+                    for (int z = j - p_size; z <= j + p_size; z++)
+                        sum += frame.at<uchar>(k, z);
+
+                f_convolved.at<uchar>(i, j) = sum / ker_dim;
+                diff_pixels += f_bg.at<uchar>(i, j) != f_convolved.at<uchar>(i, j);
+            }
+
+        float perc = ((float)diff_pixels / t_pixels) * 100;
+
+        return perc > thresh;
+    }
 };
