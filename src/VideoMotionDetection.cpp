@@ -26,6 +26,8 @@ private:
     VideoCapture capture;
 
 public:
+    VideoMotionDetection() {}
+
     VideoMotionDetection(std::string path, int k_size, float thresh)
     {
         this->path = path;

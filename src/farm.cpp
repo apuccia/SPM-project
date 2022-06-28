@@ -4,9 +4,123 @@
 #include <atomic>
 #include <unistd.h>
 
+#include <ff/ff.hpp>
+
+#include "ff_nodes_implementations.cpp"
 #include "Utimer.cpp"
-#include "VideoMotionDetection.cpp"
 #include "ConcurrentDeque.cpp"
+
+void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
+{
+    ConcurrentDeque<Mat> deque;
+    std::atomic<int> detected(0);
+    VideoMotionDetection detector =
+        VideoMotionDetection(path, k_size, thresh);
+    int total_frames = detector.get_num_frames() - 1;
+
+    if (stats)
+    {
+        detector.print_info();
+        std::cout << "Number of farm workers: " << nw << std::endl;
+    }
+
+    Utimer timer_completion;
+    long completion_time = 0, service_time = 0;
+    int iters = 5;
+
+    for (int i = 0; i < iters; i++)
+    {
+        timer_completion.start();
+        std::vector<std::thread> workers = std::vector<std::thread>(nw);
+        for (int j = 0; j < nw; j++)
+        {
+            workers.at(j) = std::thread(
+                [&deque, &detector, &detected]
+                {
+            while (true) {
+                Mat frame = deque.pop();
+                if (frame.empty()) break;
+                Mat f_padded;
+                detector.pad_frame(frame, f_padded);
+
+                Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
+                detector.to_greyscale(f_padded, f_grey);
+
+                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
+                if (detector.convolve_detect(f_grey, f_convolved)) 
+                    detected++;
+            } });
+        }
+
+        while (true)
+        {
+            Mat frame;
+            detector.next_frame(frame);
+
+            if (frame.empty())
+            {
+                deque.push_empty(nw, frame);
+                break;
+            }
+            deque.push(frame);
+        }
+
+        for (int j = 0; j < nw; j++)
+            workers.at(j).join();
+
+        completion_time += timer_completion.stop();
+        service_time += completion_time / total_frames;
+
+        // reset to first frame (background excluded) for next iteration
+        detector.reset_video();
+    }
+
+    std::cout << "---------- RESULTS(CPP THREADS): average on " << iters << " iterations ----------" << std::endl;
+    std::cout << "Total frames " << total_frames << std::endl;
+    std::cout << "Detected " << detected / iters << " frames" << std::endl;
+    std::cout << "Completion time " << completion_time / iters << std::endl;
+    std::cout << "Service time: " << service_time / iters << std::endl;
+}
+
+void fast_flow(std::string path, int k_size, float thresh, int nw)
+{
+    int iters = 5;
+    std::atomic<int> detected(0);
+    VideoMotionDetection detector =
+        VideoMotionDetection(path, k_size, thresh);
+    int total_frames = detector.get_num_frames() - 1;
+
+    Utimer timer_completion;
+    long completion_time = 0, service_time = 0;
+
+    for (int i = 0; i < iters; i++)
+    {   
+        timer_completion.start();
+
+        std::vector<std::unique_ptr<ff::ff_node>> workers(nw);
+        for (int j = 0; j < nw; j++)
+            workers[j] = std::make_unique<FullWorker>(detector, &detected);
+
+        Loader loader(detector);
+        ff::ff_Farm<Mat> farm(std::move(workers), loader);
+
+        farm.remove_collector();
+        farm.set_scheduling_ondemand();
+        farm.run_and_wait_end();
+
+        completion_time += timer_completion.stop();
+        service_time += completion_time / total_frames;
+
+        // reset to first frame (background excluded) for next iteration
+        detector.reset_video();
+    }
+
+    std::cout << "---------- RESULTS(FF): average on " << iters << " iterations ----------" << std::endl;
+    std::cout << "Total frames " << total_frames << std::endl;
+    std::cout << "Detected " << detected / iters << " frames" << std::endl;
+    std::cout << "Completion time " << completion_time / iters << std::endl;
+    std::cout << "Service time: " << service_time / iters << std::endl;
+}
 
 int main(int argc, char **argv)
 {
@@ -57,74 +171,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    ConcurrentDeque<Mat> deque;
-    std::atomic<int> detected(0);
-    VideoMotionDetection detector =
-        VideoMotionDetection(path, k_size, thresh);
-    int total_frames = detector.get_num_frames();
-
-    if (stats)
-    {
-        detector.print_info();
-        std::cout << "Number of farm workers: " << nw << std::endl;
-    }
-
-    Utimer timer;
-    int iters = 5;
-    long total = 0;
-
-    for (int i = 0; i < iters; i++)
-    {
-        timer.start();
-        std::vector<std::thread> workers = std::vector<std::thread>(nw);
-        for (int j = 0; j < nw; j++)
-        {
-            workers.at(j) = std::thread([&deque, &detector, &detected]
-                                        {
-            while (true) {
-                Mat frame = deque.pop();
-
-                if (frame.empty()) break;
-
-                Mat f_padded;
-                detector.pad_frame(frame, f_padded);
-                Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
-                detector.to_greyscale(f_padded, f_grey);
-                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-                
-                if (detector.convolve_detect(f_grey, f_convolved)) 
-                    detected++;
-            } });
-        }
-
-        while (true)
-        {
-            Mat frame;
-            detector.next_frame(frame);
-
-            if (frame.empty())
-            {
-                deque.push_empty(nw, frame);
-                break;
-            }
-
-            deque.push(frame);
-        }
-
-        for (int j = 0; j < nw; j++)
-            workers.at(j).join();
-        total += timer.stop();
-
-        // reset to first frame (background excluded)
-        detector.reset_video();
-    }
-
-    long avg = total / iters;
-    std::cout << "---------- RESULTS: average on " << iters << " iterations ----------" << std::endl;
-    std::cout << "Total frames " << total_frames << std::endl;
-    std::cout << "Detected " << detected / iters << " frames" << std::endl;
-    std::cout << "Total time to process the whole stream " << avg << std::endl;
-    std::cout << "Service time: " << avg / total_frames << std::endl;
+    cpp_threads(path, k_size, thresh, nw, stats);
+    fast_flow(path, k_size, thresh, nw);
 
     return 0;
 }
