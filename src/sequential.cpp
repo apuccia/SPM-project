@@ -92,7 +92,7 @@ int main(int argc, char **argv)
             {
                 timer.start();
                 Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-                detector.convolve_detect(f_grey, f_convolved);
+                detected += detector.convolve_detect(f_grey, f_convolved);
                 it_convolute += timer.stop();
             }
             else
