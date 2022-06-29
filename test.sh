@@ -27,31 +27,27 @@ fi
 
 # Sequential
 if [[ $sol == 0 ]]; then
-    mkdir -p results/sequential/$res;
-    for ker in {3..11..2}; do
-        echo "Testing sequential solution with resolution $res, kernel size $ker"
-        ./bin/sequential.out -k $ker -t 50 -f $data > ./results/sequential/$res/sequential\_$res\_$ker.txt
-    done;
+    mkdir -p results/sequential;
+    echo "Testing sequential solution with resolution $res, kernel size 11"
+    ./bin/sequential.out -k 11 -t 50 -f $data > ./results/sequential/sequential_$res.txt
 fi
 
 # Farm
 if [[ $sol == 1 ]]; then
-    for ker in {3..11..2}; do
-        for nw in {2..32..2}; do
-            mkdir -p results/farm/$res/$ker;
-            echo "Testing farm solution with resolution $res, kernel size $ker, $nw workers"
-            ./bin/farm.out -k $ker -t 50 -f $data -n $nw > ./results/farm/$res/$ker/farm_$nw.txt
-        done
+    mkdir -p results/farm;
+    ./bin/farm.out -k 11 -t 50 -f $data -n 1 > ./results/farm/farm_$res.txt
+    for (( nw = 2; nw <= 64; nw = nw * 2 )); do
+        echo "Testing farm solution with resolution $res, kernel size 11, $nw workers"
+        ./bin/farm.out -k 11 -t 50 -f $data -n $nw >> ./results/farm/farm_$res.txt
     done
 fi
 
 # Pipe
 if [[ $sol == 2 ]]; then
-    mkdir -p results/pipe/$res/$ker;
-    for ker in {3..11..2}; do
-        for nw in {2..32..2}; do
-            echo "Testing pipe solution with kernel size $ker, resolution $res, $nw workers"
-            ./bin/pipe.out -k $ker -t 50 -f $data -n $nw > ./results/pipe/$res/$ker/pipe_$nw.txt
-        done
+    mkdir -p results/pipe;
+    ./bin/pipe.out -k 11 -t 50 -f $data -n 1 > ./results/pipe/$res/pipe.txt
+    for (( nw = 2; nw <= 64; nw = nw * 2 )); do
+        echo "Testing pipe solution with resolution $res, kernel size 11, $nw workers"
+        ./bin/pipe.out -k 11 -t 50 -f $data -n $nw >> ./results/pipe/pipe_$res.txt
     done
 fi
