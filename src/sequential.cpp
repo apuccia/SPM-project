@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     std::string path = "";
     int k_size = 0;
     float thresh = -1;
-    bool stats = false, conv_det = 1;
+    bool stats = false, conv_det = true;
 
     int opt;
     while ((opt = getopt(argc, argv, "k:f:t:s:c")) != -1)
@@ -91,8 +91,7 @@ int main(int argc, char **argv)
             if (conv_det)
             {
                 timer.start();
-                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-                detected += detector.convolve_detect(f_grey, f_convolved);
+                detected += detector.convolve_detect(f_grey);
                 it_convolute += timer.stop();
             }
             else
@@ -118,38 +117,43 @@ int main(int argc, char **argv)
         detector.reset_video();
     }
 
-    t_total += t_read + t_padding + t_grey + t_convolute + t_detect;
+    t_total += (t_read + t_padding + t_grey + t_convolute + t_detect) / iters;
+    t_read = t_read / iters;
+    t_padding = t_padding / iters;
+    t_grey = t_grey / iters;
+    t_convolute = t_convolute / iters;
+    t_detect = t_detect / iters;
 
     std::cout << "---------- RESULTS: average on " << iters << " iterations ----------" << std::endl;
     std::cout << "Total frames: " << t_frames << std::endl;
     std::cout << "Detected " << detected / iters << " frames" << std::endl;
     std::cout << "***** Read" << std::endl;
-    std::cout << "Average time spent on reading a frame: " << (t_read / t_frames) / iters << std::endl;
-    std::cout << "Total time spent on reading frames: " << t_read / iters << std::endl;
+    std::cout << "Average time spent on reading a frame: " << t_read / t_frames << std::endl;
+    std::cout << "Total time spent on reading frames: " << t_read << std::endl;
     std::cout << "***** Pad" << std::endl;
-    std::cout << "Average time spent on padding a frame: " << (t_padding / t_frames) / iters << std::endl;
-    std::cout << "Total time spent on padding a frame: " << t_padding / iters << std::endl;
+    std::cout << "Average time spent on padding a frame: " << t_padding / t_frames << std::endl;
+    std::cout << "Total time spent on padding a frame: " << t_padding << std::endl;
     std::cout << "***** Greyscale" << std::endl;
-    std::cout << "Average time spent on greyscaling a frame: " << (t_grey / t_frames) / iters << std::endl;
-    std::cout << "Total time spent on greyscaling a frame: " << t_grey / iters << std::endl;
+    std::cout << "Average time spent on greyscaling a frame: " << t_grey / t_frames << std::endl;
+    std::cout << "Total time spent on greyscaling a frame: " << t_grey << std::endl;
 
     if (conv_det)
     {
         std::cout << "***** Convolution & Detection" << std::endl;
-        std::cout << "Average time spent on convoluting & detecting a frame: " << (t_convolute / t_frames) / iters << std::endl;
-        std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
+        std::cout << "Average time spent on convoluting & detecting a frame: " << t_convolute / t_frames << std::endl;
+        std::cout << "Total time spent on convoluting & detecting a frame: " << t_convolute << std::endl;
     }
     else
     {
         std::cout << "***** Convolution" << std::endl;
-        std::cout << "Average time spent on convoluting a frame: " << (t_convolute / t_frames) / iters << std::endl;
-        std::cout << "Total time spent on convoluting a frame: " << t_convolute / iters << std::endl;
+        std::cout << "Average time spent on convoluting a frame: " << t_convolute / t_frames << std::endl;
+        std::cout << "Total time spent on convoluting a frame: " << t_convolute << std::endl;
         std::cout << "***** Detection" << std::endl;
-        std::cout << "Average time spent on detecting a frame: " << (t_detect / t_frames) / iters << std::endl;
-        std::cout << "Total time spent on detecting a frame: " << t_detect / iters << std::endl;
+        std::cout << "Average time spent on detecting a frame: " << t_detect / t_frames << std::endl;
+        std::cout << "Total time spent on detecting a frame: " << t_detect << std::endl;
     }
     std::cout << "***** Total" << std::endl;
-    std::cout << "Total time spent to process the whole stream: " << t_total / iters << std::endl;
+    std::cout << "Total time spent to process the whole stream: " << t_total << std::endl;
     std::cout << "-------------------------------------------------------" << std::endl;
 
     return 0;
