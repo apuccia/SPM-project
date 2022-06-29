@@ -10,8 +10,8 @@ target_link_libraries( sequential.out ${OpenCV_LIBS} )
 
 add_executable( farm.out ./src/farm.cpp )
 target_include_directories( farm.out PRIVATE ./lib/fastflow-master )
-target_link_libraries( farm.out PUBLIC -pthread ${OpenCV_LIBS})
+target_link_libraries( farm.out PUBLIC -pthread ${OpenCV_LIBS} )
 
 add_executable( pipe.out ./src/pipe.cpp )
 target_include_directories( pipe.out PRIVATE ./lib/fastflow-master )
-target_link_libraries( pipe.out PUBLIC -pthread ${OpenCV_LIBS})
+target_link_libraries( pipe.out PUBLIC -pthread ${OpenCV_LIBS} )
