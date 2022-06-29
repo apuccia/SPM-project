@@ -6,8 +6,8 @@
 
 #include <ff/ff.hpp>
 
-#include "ff_nodes_implementations.cpp"
 #include "Utimer.cpp"
+#include "ff_nodes_implementations.cpp"
 #include "ConcurrentDeque.cpp"
 
 void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
@@ -24,8 +24,8 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
         std::cout << "Number of farm workers: " << nw << std::endl;
     }
 
-    Utimer timer_completion;
-    long completion_time = 0, service_time = 0;
+    Utimer timer_read, timer_worker, timer_completion;
+    long total_completion = 0;
     int iters = 5;
 
     for (int i = 0; i < iters; i++)
@@ -68,18 +68,19 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
         for (int j = 0; j < nw; j++)
             workers.at(j).join();
 
-        completion_time += timer_completion.stop();
-        service_time += completion_time / total_frames;
+        total_completion += timer_completion.stop();
 
         // reset to first frame (background excluded) for next iteration
         detector.reset_video();
     }
 
-    std::cout << "---------- RESULTS(CPP THREADS): average on " << iters << " iterations ----------" << std::endl;
-    std::cout << "Total frames " << total_frames << std::endl;
-    std::cout << "Detected " << detected / iters << " frames" << std::endl;
-    std::cout << "Completion time " << completion_time / iters << std::endl;
-    std::cout << "Service time: " << service_time / iters << std::endl;
+    total_completion = total_completion / iters;
+
+    std::cout << "---------- RESULTS(" << nw << " workers): average on " << iters << " iterations ----------" << std::endl;
+    std::cout << "(CPP) Total frames: " << total_frames << std::endl;
+    std::cout << "(CPP) Detected: " << detected / iters << " frames" << std::endl;
+    std::cout << "(CPP) Completion time: " << total_completion << std::endl;
+    std::cout << "(CPP) Service time: " << total_completion / total_frames << std::endl;
 }
 
 void fast_flow(std::string path, int k_size, float thresh, int nw)
@@ -91,35 +92,36 @@ void fast_flow(std::string path, int k_size, float thresh, int nw)
     int total_frames = detector.get_num_frames() - 1;
 
     Utimer timer_completion;
-    long completion_time = 0, service_time = 0;
+    long total_completion = 0;
 
     for (int i = 0; i < iters; i++)
-    {   
+    {
         timer_completion.start();
 
         std::vector<std::unique_ptr<ff::ff_node>> workers(nw);
         for (int j = 0; j < nw; j++)
             workers[j] = std::make_unique<FullWorker>(detector, &detected);
-
+    
         Loader loader(detector);
         ff::ff_Farm<Mat> farm(std::move(workers), loader);
 
         farm.remove_collector();
         farm.set_scheduling_ondemand();
+
         farm.run_and_wait_end();
 
-        completion_time += timer_completion.stop();
-        service_time += completion_time / total_frames;
+        total_completion += timer_completion.stop();
 
         // reset to first frame (background excluded) for next iteration
         detector.reset_video();
     }
 
-    std::cout << "---------- RESULTS(FF): average on " << iters << " iterations ----------" << std::endl;
-    std::cout << "Total frames " << total_frames << std::endl;
-    std::cout << "Detected " << detected / iters << " frames" << std::endl;
-    std::cout << "Completion time " << completion_time / iters << std::endl;
-    std::cout << "Service time: " << service_time / iters << std::endl;
+    total_completion = total_completion / iters;
+
+    std::cout << "(FF) Total frames: " << total_frames << std::endl;
+    std::cout << "(FF) Detected: " << detected / iters << " frames" << std::endl;
+    std::cout << "(FF) Completion time: " << total_completion << std::endl;
+    std::cout << "(FF) Service time: " << total_completion / total_frames << std::endl;
 }
 
 int main(int argc, char **argv)
