@@ -34,54 +34,65 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
     {
         timer_completion.start();
         // creating thread that will perform padding
-        std::thread t_padding = std::thread([nw, &read_deque, &s1s2_deque, &detector]
-                                            {
-            while (true) {
-                Mat frame = read_deque.pop();
-                Mat f_padded;
+        std::thread t_padding = std::thread(
+            [nw, &read_deque, &s1s2_deque, &detector]
+            {
+                while (true)
+                {
+                    Mat frame = read_deque.pop();
+                    Mat f_padded;
 
-                if (frame.empty()) {
-                    s1s2_deque.push(frame);
-                    break;
+                    if (frame.empty())
+                    {
+                        s1s2_deque.push(frame);
+                        break;
+                    }
+
+                    detector.pad_frame(frame, f_padded);
+
+                    s1s2_deque.push(f_padded);
                 }
-                
-                detector.pad_frame(frame, f_padded);
-                
-                s1s2_deque.push(f_padded);
-            } });
+            });
 
         // creating thread that will perform greying
-        std::thread t_greying = std::thread([nw, &s1s2_deque, &s2s3_deque, &detector]
-                                            {
-            while (true) {
-                Mat frame = s1s2_deque.pop();
-                Mat f_grey = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
+        std::thread t_greying = std::thread(
+            [nw, &s1s2_deque, &s2s3_deque, &detector]
+            {
+                while (true)
+                {
+                    Mat frame = s1s2_deque.pop();
+                    Mat f_grey = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
 
-                if (frame.empty()) {
-                    s2s3_deque.push_empty(nw, frame);
-                    break;
+                    if (frame.empty())
+                    {
+                        s2s3_deque.push_empty(nw, frame);
+                        break;
+                    }
+
+                    detector.to_greyscale(frame, f_grey);
+
+                    s2s3_deque.push(f_grey);
                 }
-                
-                detector.to_greyscale(frame, f_grey);
-
-                s2s3_deque.push(f_grey);
-            } });
+            });
 
         // creating thread that will perform convolution & detection
         std::vector<std::thread> workers = std::vector<std::thread>(nw);
         for (int j = 0; j < nw; j++)
         {
-            workers.at(j) = std::thread([&s2s3_deque, &detector, &detected]
-                                        {
-            while (true) {
-                Mat frame = s2s3_deque.pop();
-                Mat f_convolved = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
+            workers.at(j) = std::thread(
+                [&s2s3_deque, &detector, &detected]
+                {
+                    while (true)
+                    {
+                        Mat frame = s2s3_deque.pop();
+                        Mat f_convolved = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
 
-                if (frame.empty()) break;
+                        if (frame.empty())
+                            break;
 
-                if (detector.convolve_detect(frame, f_convolved)) 
-                    detected++;
-            } });
+                        detected += detector.convolve_detect(frame);
+                    }
+                });
         }
 
         while (true)
@@ -133,13 +144,13 @@ void fast_flow(std::string path, int k_size, float thresh, int nw)
     {
         timer_completion.start();
 
-        Loader loader(detector);
-        Padder padder(detector);
-        Greyscaler gscaler(detector);
+        Loader loader(&detector);
+        Padder padder(&detector);
+        Greyscaler gscaler(&detector);
 
         std::vector<std::unique_ptr<ff::ff_node>> workers(nw);
         for (int j = 0; j < nw; j++)
-            workers[j] = std::make_unique<ConvolveDetectWorker>(detector, &detected);
+            workers[j] = std::make_unique<ConvolveDetectWorker>(&detector, &detected);
 
         ff::ff_Farm<Mat> farm(std::move(workers));
         farm.remove_collector();

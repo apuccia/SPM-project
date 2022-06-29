@@ -14,7 +14,7 @@ private:
     std::condition_variable cv;
 
 public:
-    void push(T el)
+    void push(T &el)
     {
         std::lock_guard<std::mutex> lock(mutex);
         deque.push_front(el);
@@ -34,7 +34,7 @@ public:
         return el;
     }
 
-    void push_empty(int nw, Mat frame)
+    void push_empty(int nw, Mat &frame)
     {
         std::lock_guard<std::mutex> lock(mutex);
         for (int i = 0; i < nw; i++)

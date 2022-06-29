@@ -4,10 +4,10 @@
 class Loader : public ff::ff_node_t<Mat>
 {
 private:
-    VideoMotionDetection detector;
+    VideoMotionDetection *detector;
 
 public:
-    Loader(VideoMotionDetection detector)
+    Loader(VideoMotionDetection *detector)
     {
         this->detector = detector;
     }
@@ -17,7 +17,7 @@ public:
         while (true)
         {
             Mat *frame = new Mat();
-            detector.next_frame(*frame);
+            detector->next_frame(*frame);
 
             if ((*frame).empty())
                 return EOS;
@@ -30,11 +30,11 @@ public:
 class FullWorker : public ff::ff_node_t<Mat, void>
 {
 private:
-    VideoMotionDetection detector;
+    VideoMotionDetection *detector;
     std::atomic_int *detected;
 
 public:
-    FullWorker(VideoMotionDetection detector, std::atomic_int *detected)
+    FullWorker(VideoMotionDetection *detector, std::atomic_int *detected)
     {
         this->detector = detector;
         this->detected = detected;
@@ -43,14 +43,13 @@ public:
     void *svc(Mat *frame)
     {
         Mat f_padded;
-        detector.pad_frame(*frame, f_padded);
+        detector->pad_frame(*frame, f_padded);
 
         Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
-        detector.to_greyscale(f_padded, f_grey);
+        detector->to_greyscale(f_padded, f_grey);
 
         Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-        if (detector.convolve_detect(f_grey, f_convolved))
-            (*detected)++;
+        *detected += detector->convolve_detect(f_grey);
 
         delete (frame);
 
@@ -61,10 +60,10 @@ public:
 class Padder : public ff::ff_node_t<Mat>
 {
 private:
-    VideoMotionDetection detector;
+    VideoMotionDetection *detector;
 
 public:
-    Padder(VideoMotionDetection detector)
+    Padder(VideoMotionDetection *detector)
     {
         this->detector = detector;
     }
@@ -74,7 +73,7 @@ public:
         Mat *f_padded = new Mat();
         *f_padded = Mat::zeros((*frame).rows, (*frame).cols, CV_8UC1);
 
-        detector.pad_frame(*frame, *f_padded);
+        detector->pad_frame(*frame, *f_padded);
 
         delete (frame);
 
@@ -85,10 +84,10 @@ public:
 class Greyscaler : public ff::ff_node_t<Mat>
 {
 private:
-    VideoMotionDetection detector;
+    VideoMotionDetection *detector;
 
 public:
-    Greyscaler(VideoMotionDetection detector)
+    Greyscaler(VideoMotionDetection *detector)
     {
         this->detector = detector;
     }
@@ -98,7 +97,7 @@ public:
         Mat *f_grey = new Mat();
         *f_grey = Mat::zeros((*frame).rows, (*frame).cols, CV_8UC1);
 
-        detector.to_greyscale(*frame, *f_grey);
+        detector->to_greyscale(*frame, *f_grey);
 
         delete (frame);
 
@@ -109,11 +108,11 @@ public:
 class ConvolveDetectWorker : public ff::ff_node_t<Mat, void>
 {
 private:
-    VideoMotionDetection detector;
+    VideoMotionDetection *detector;
     std::atomic_int *detected;
 
 public:
-    ConvolveDetectWorker(VideoMotionDetection detector, std::atomic_int *detected)
+    ConvolveDetectWorker(VideoMotionDetection *detector, std::atomic_int *detected)
     {
         this->detector = detector;
         this->detected = detected;
@@ -124,8 +123,7 @@ public:
         Mat *f_convolved = new Mat();
         *f_convolved = Mat::zeros((*frame).rows, (*frame).cols, CV_8UC1);
 
-        if (detector.convolve_detect(*frame, *f_convolved))
-            (*detected)++;
+        *detected += detector->convolve_detect(*frame);
 
         delete (frame);
 

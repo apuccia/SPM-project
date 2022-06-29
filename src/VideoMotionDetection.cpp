@@ -140,7 +140,7 @@ public:
         return perc > thresh;
     }
 
-    bool convolve_detect(Mat &frame, Mat &f_convolved) {
+    bool convolve_detect(Mat &frame) {
         long sum;
         int diff_pixels= 0;
         int ker_dim = k_size * k_size;
@@ -153,8 +153,7 @@ public:
                     for (int z = j - p_size; z <= j + p_size; z++)
                         sum += frame.at<uchar>(k, z);
 
-                f_convolved.at<uchar>(i, j) = sum / ker_dim;
-                diff_pixels += f_bg.at<uchar>(i, j) != f_convolved.at<uchar>(i, j);
+                diff_pixels += f_bg.at<uchar>(i, j) != sum / ker_dim;
             }
 
         float perc = ((float)diff_pixels / t_pixels) * 100;

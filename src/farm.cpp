@@ -37,19 +37,21 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
             workers.at(j) = std::thread(
                 [&deque, &detector, &detected]
                 {
-            while (true) {
-                Mat frame = deque.pop();
-                if (frame.empty()) break;
-                Mat f_padded;
-                detector.pad_frame(frame, f_padded);
+                    while (true)
+                    {
+                        Mat frame = deque.pop();
+                        if (frame.empty())
+                            break;
+                        Mat f_padded;
+                        detector.pad_frame(frame, f_padded);
 
-                Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
-                detector.to_greyscale(f_padded, f_grey);
+                        Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
+                        detector.to_greyscale(f_padded, f_grey);
 
-                Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
-                if (detector.convolve_detect(f_grey, f_convolved)) 
-                    detected++;
-            } });
+                        Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
+                        detected += detector.convolve_detect(f_grey);
+                    }
+                });
         }
 
         while (true)
@@ -100,9 +102,9 @@ void fast_flow(std::string path, int k_size, float thresh, int nw)
 
         std::vector<std::unique_ptr<ff::ff_node>> workers(nw);
         for (int j = 0; j < nw; j++)
-            workers[j] = std::make_unique<FullWorker>(detector, &detected);
-    
-        Loader loader(detector);
+            workers[j] = std::make_unique<FullWorker>(&detector, &detected);
+
+        Loader loader(&detector);
         ff::ff_Farm<Mat> farm(std::move(workers), loader);
 
         farm.remove_collector();
