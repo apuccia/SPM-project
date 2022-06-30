@@ -28,7 +28,7 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
 
     Utimer timer_completion;
     long total_completion = 0;
-    int iters = 5;
+    int iters = 10;
 
     for (int i = 0; i < iters; i++)
     {
@@ -129,9 +129,9 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
     std::cout << "(CPP) Service time: " << total_completion / total_frames << std::endl;
 }
 
-void fast_flow(std::string path, int k_size, float thresh, int nw)
+void fast_flow(std::string path, int k_size, float thresh, int nw, bool auto_scheduling)
 {
-    int iters = 5;
+    int iters = 10;
     std::atomic<int> detected(0);
     VideoMotionDetection detector =
         VideoMotionDetection(path, k_size, thresh);
@@ -152,11 +152,12 @@ void fast_flow(std::string path, int k_size, float thresh, int nw)
         for (int j = 0; j < nw; j++)
             workers[j] = std::make_unique<ConvolveDetectWorker>(&detector, &detected);
 
-        ff::ff_Farm<Mat> farm(std::move(workers));
+        ff::ff_Farm<Mat> farm(std::move(workers), gscaler);
         farm.remove_collector();
-        farm.set_scheduling_ondemand();
+        if (auto_scheduling) 
+            farm.set_scheduling_ondemand();
 
-        ff::ff_Pipe<> pipe(loader, padder, gscaler, farm);
+        ff::ff_Pipe<> pipe(loader, padder, farm);
         pipe.run_and_wait_end();
 
         total_completion += timer_completion.stop();
@@ -166,16 +167,16 @@ void fast_flow(std::string path, int k_size, float thresh, int nw)
     }
 
     total_completion = total_completion / iters;
-    std::cout << "(FF) Total frames: " << total_frames << std::endl;
-    std::cout << "(FF) Detected: " << detected / iters << " frames" << std::endl;
-    std::cout << "(FF) Completion time: " << total_completion << std::endl;
-    std::cout << "(FF) Service time: " << total_completion / total_frames << std::endl;
+    std::cout << "(FF " << auto_scheduling << ") Total frames: " << total_frames << std::endl;
+    std::cout << "(FF " << auto_scheduling << ") Detected: " << detected / iters << " frames" << std::endl;
+    std::cout << "(FF " << auto_scheduling << ") Completion time: " << total_completion << std::endl;
+    std::cout << "(FF " << auto_scheduling << ") Service time: " << total_completion / total_frames << std::endl;
 }
 
 int main(int argc, char **argv)
 {
     std::string path = "";
-    int k_size = 0, nw = 1;
+    int k_size = 0, nw = 0;
     float thresh = -1;
     bool stats = false;
 
@@ -209,7 +210,7 @@ int main(int argc, char **argv)
                       << std::endl;
         }
     }
-    if (k_size == 0 || path.empty() || thresh == -1 || nw < 1)
+    if (k_size < 0 || k_size == 1 || k_size % 2 == 0 || path.empty() || thresh < 0 || thresh > 100 || nw < 1)
     {
         std::cout << "Usage:\n"
                   << argv[0] << "\n"
@@ -222,7 +223,8 @@ int main(int argc, char **argv)
     }
 
     cpp_threads(path, k_size, thresh, nw, stats);
-    fast_flow(path, k_size, thresh, nw);
+    fast_flow(path, k_size, thresh, nw, 0);
+    fast_flow(path, k_size, thresh, nw, 1);
 
     return 0;
 }

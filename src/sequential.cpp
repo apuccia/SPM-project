@@ -42,13 +42,13 @@ int main(int argc, char **argv)
             return -1;
         }
     }
-    if (k_size == 0 || path.empty() || thresh == -1)
+    if (k_size < 0 || k_size == 1 || k_size % 2 == 0 || path.empty() || thresh < 0 || thresh > 100)
     {
         std::cout << "Usage:\n"
                   << argv[0] << "\n"
                                 "[-k] kernel size\n"
                                 "[-f] file path\n"
-                                "[-t] detect threshold"
+                                "[-t] detect threshold\n"
                   << std::endl;
         return -1;
     }
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int t_frames = detector.get_num_frames() - 1;
     int detected = 0;
 
-    int iters = 5;
+    int iters = 10;
     // total times for all iterations
     long t_read = 0, t_padding = 0, t_grey = 0, t_convolute = 0, t_detect = 0, t_total = 0;
     for (int i = 0; i < iters; i++)
