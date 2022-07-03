@@ -1,4 +1,4 @@
-.PHONY: build compile
+.PHONY: build compile ff
 
 compile:
 	make -C ./build
@@ -6,6 +6,9 @@ compile:
 build:
 	mkdir -p build;
 	cd build && cmake ../
+
+ff:
+	cd lib/fastflow-master/ff && ./mapping_string.sh
 
 testSDseq:
 	./test.sh SD 0;
