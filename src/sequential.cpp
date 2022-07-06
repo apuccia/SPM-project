@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     std::string path = "";
     int k_size = 0;
     float thresh = -1;
-    bool stats = false, conv_det = true;
+    bool stats = false, conv_det = false;
 
     int opt;
     while ((opt = getopt(argc, argv, "k:f:t:s:c")) != -1)
@@ -36,7 +36,8 @@ int main(int argc, char **argv)
                       << argv[0] << "\n"
                                     "[-k] kernel size\n"
                                     "[-f] file path\n"
-                                    "[-t] detect threshold"
+                                    "[-t] detect threshold\n"
+                                    "[-c] (to use convolution + detection)"
                       << std::endl;
 
             return -1;
@@ -49,6 +50,7 @@ int main(int argc, char **argv)
                                 "[-k] kernel size\n"
                                 "[-f] file path\n"
                                 "[-t] detect threshold\n"
+                                "[-c] (to use convolution + detection)"
                   << std::endl;
         return -1;
     }
