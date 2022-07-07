@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     int t_frames = detector.get_num_frames() - 1;
     int detected = 0;
 
-    int iters = 10;
+    int iters = 5;
     // total times for all iterations
     long t_read = 0, t_padding = 0, t_grey = 0, t_convolute = 0, t_detect = 0, t_total = 0;
     for (int i = 0; i < iters; i++)

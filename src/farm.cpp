@@ -26,7 +26,7 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
 
     Utimer timer_read, timer_worker, timer_completion;
     long total_completion = 0;
-    int iters = 10;
+    int iters = 5;
 
     for (int i = 0; i < iters; i++)
     {
