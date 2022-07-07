@@ -37,6 +37,21 @@ testFHDfarm:
 testFHDpipe:
 	./test.sh FHD 2;
 
+testSD:
+	./test.sh SD 0;
+	./test.sh SD 1;
+	./test.sh SD 2;
+
+testHD:
+	./test.sh HD 0;
+	./test.sh HD 1;
+	./test.sh HD 2;
+
+testFHD:
+	./test.sh FHD 0;
+	./test.sh FHD 1;
+	./test.sh FHD 2;
+
 testall:
 	./test.sh SD 0;
 	./test.sh SD 1;
