@@ -85,7 +85,6 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
                     while (true)
                     {
                         Mat frame = s2s3_deque.pop();
-                        Mat f_convolved = Mat::zeros(frame.rows, frame.cols, CV_8UC1);
 
                         if (frame.empty())
                             break;

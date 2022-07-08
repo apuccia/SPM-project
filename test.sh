@@ -29,7 +29,7 @@ fi
 if [[ $sol == 0 ]]; then
     mkdir -p results/sequential;
     echo "Testing sequential solution with resolution $res, kernel size 11"
-    ./bin/sequential.out -k 11 -t 50 -f $data > ./results/sequential/sequential_$res.txt
+    ./bin/sequential.out -k 11 -t 50 -f $data -c > ./results/sequential/sequential_$res.txt
 fi
 
 # Farm

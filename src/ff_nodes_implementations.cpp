@@ -48,7 +48,6 @@ public:
         Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
         detector->to_greyscale(f_padded, f_grey);
 
-        Mat f_convolved = Mat::zeros(f_grey.rows, f_grey.cols, CV_8UC1);
         *detected += detector->convolve_detect(f_grey);
 
         delete (frame);
@@ -120,9 +119,6 @@ public:
 
     void *svc(Mat *frame)
     {
-        Mat *f_convolved = new Mat();
-        *f_convolved = Mat::zeros((*frame).rows, (*frame).cols, CV_8UC1);
-
         *detected += detector->convolve_detect(*frame);
 
         delete (frame);
