@@ -34,7 +34,7 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, int iters, 
         timer_completion.start();
         // creating thread that will perform padding
         std::thread t_padding = std::thread(
-            [nw, &read_deque, &s1s2_deque, &detector]
+            [&read_deque, &s1s2_deque, &detector]
             {
                 while (true)
                 {
