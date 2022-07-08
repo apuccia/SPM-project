@@ -14,16 +14,13 @@ public:
 
     Mat *svc(Mat *)
     {
-        while (true)
-        {
-            Mat *frame = new Mat();
-            detector->next_frame(*frame);
+        Mat *frame = new Mat();
+        detector->next_frame(*frame);
 
-            if ((*frame).empty())
-                return EOS;
+        if ((*frame).empty())
+            return EOS;
 
-            return frame;
-        }
+        return frame;
     }
 };
 
@@ -32,6 +29,7 @@ class FullWorker : public ff::ff_node_t<Mat, void>
 private:
     VideoMotionDetection *detector;
     std::atomic_int *detected;
+    int local_detected = 0;
 
 public:
     FullWorker(VideoMotionDetection *detector, std::atomic_int *detected)
@@ -48,11 +46,16 @@ public:
         Mat f_grey = Mat::zeros(f_padded.rows, f_padded.cols, CV_8UC1);
         detector->to_greyscale(f_padded, f_grey);
 
-        *detected += detector->convolve_detect(f_grey);
+        local_detected += detector->convolve_detect(f_grey);
 
         delete (frame);
 
         return GO_ON;
+    }
+
+    void svc_end()
+    {
+        *detected += local_detected;
     }
 };
 
@@ -109,6 +112,7 @@ class ConvolveDetectWorker : public ff::ff_node_t<Mat, void>
 private:
     VideoMotionDetection *detector;
     std::atomic_int *detected;
+    int local_detected = 0;
 
 public:
     ConvolveDetectWorker(VideoMotionDetection *detector, std::atomic_int *detected)
@@ -119,10 +123,15 @@ public:
 
     void *svc(Mat *frame)
     {
-        *detected += detector->convolve_detect(*frame);
+        local_detected += detector->convolve_detect(*frame);
 
         delete (frame);
 
         return GO_ON;
+    }
+
+    void svc_end()
+    {
+        *detected += local_detected;
     }
 };

@@ -10,7 +10,7 @@
 #include "ff_nodes_implementations.cpp"
 #include "ConcurrentDeque.cpp"
 
-void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
+void cpp_threads(std::string path, int k_size, float thresh, int nw, int iters, bool stats)
 {
     ConcurrentDeque<Mat> read_deque;
     ConcurrentDeque<Mat> s1s2_deque;
@@ -28,7 +28,6 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
 
     Utimer timer_completion;
     long total_completion = 0;
-    int iters = 5;
 
     for (int i = 0; i < iters; i++)
     {
@@ -82,6 +81,7 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
             workers.at(j) = std::thread(
                 [&s2s3_deque, &detector, &detected]
                 {
+                    int local_detected = 0;
                     while (true)
                     {
                         Mat frame = s2s3_deque.pop();
@@ -89,8 +89,10 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
                         if (frame.empty())
                             break;
 
-                        detected += detector.convolve_detect(frame);
+                        local_detected += detector.convolve_detect(frame);
                     }
+
+                    detected += local_detected;
                 });
         }
 
@@ -128,9 +130,8 @@ void cpp_threads(std::string path, int k_size, float thresh, int nw, bool stats)
     std::cout << "(CPP) Service time: " << total_completion / total_frames << std::endl;
 }
 
-void fast_flow(std::string path, int k_size, float thresh, int nw, bool auto_scheduling)
+void fast_flow(std::string path, int k_size, float thresh, int nw, int iters, bool auto_scheduling)
 {
-    int iters = 10;
     std::atomic<int> detected(0);
     VideoMotionDetection detector =
         VideoMotionDetection(path, k_size, thresh);
@@ -221,9 +222,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    cpp_threads(path, k_size, thresh, nw, stats);
-    fast_flow(path, k_size, thresh, nw, 0);
-    fast_flow(path, k_size, thresh, nw, 1);
+    int iters = 5;
+    cpp_threads(path, k_size, thresh, nw, iters, stats);
+    fast_flow(path, k_size, thresh, nw, iters, 0);
+    fast_flow(path, k_size, thresh, nw, iters, 1);
 
     return 0;
 }
